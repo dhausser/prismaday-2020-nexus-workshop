@@ -9,6 +9,7 @@ export function createTestContext() {
   })
 
   afterAll(async () => {
+    await ctx.app.db.client.disconnect()
     await ctx.app.stop()
   })
 
