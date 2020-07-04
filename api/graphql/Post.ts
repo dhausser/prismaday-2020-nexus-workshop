@@ -17,13 +17,21 @@ schema.extendType({
       type: 'Post',
       nullable: false,
       resolve(_root, _args, ctx) {
-        return ctx.db.posts.filter(p => p.published === false)
+        return ctx.db.post.findMany({
+          where: {
+            published: false
+          }
+        })
       }
     })
     t.list.field('posts', {
       type: 'Post',
       resolve(_root, _args, ctx) {
-        return ctx.db.posts.filter(p => p.published === true)
+        return ctx.db.post.findMany({
+          where: {
+            published: true
+          }
+        })
       }
     })
   }
@@ -39,15 +47,14 @@ schema.extendType({
         title: schema.stringArg({ required: true }),
         body: schema.stringArg({ required: true }),
       },
-      resolve(_root, args, ctx) {
-        const draft = {
-          id: ctx.db.posts.length + 1,
-          title: args.title,
-          body: args.body,
-          published: false
-        }
-
-        ctx.db.posts.push(draft)
+      async resolve(_root, args, ctx) {
+        const draft = await ctx.db.post.create({
+          data: {
+            title: args.title,
+            body: args.body,
+            published: false
+          }
+        })
 
         return draft
       }
@@ -59,15 +66,12 @@ schema.extendType({
         draftId: schema.intArg({ required: true })
       },
       resolve(_root, args, ctx) {
-        let draftToPublish = ctx.db.posts.find(p => p.id === args.draftId)
-
-        if (!draftToPublish) {
-          throw new Error(`Could not find a draft with id: ${args.draftId}`)
-        }
-
-        draftToPublish.published = true
-
-        return draftToPublish
+        return ctx.db.post.update({
+          where: { id: args.draftId },
+          data: {
+            published: true
+          }
+        })
       }
     })
   }
